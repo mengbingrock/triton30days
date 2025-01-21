@@ -107,9 +107,10 @@ def demo2(x_ptr):
     j_range = tl.arange(0, 4)[None, :]
     range = i_range * 4 + j_range
     # print works in the interpreter
+    print('range:')
     print(range)
     x = tl.load(x_ptr + range, (i_range < 4) & (j_range < 3), 0)
-    print(x)
+    print('x=', x)
 
 
 def run_demo2():
@@ -214,9 +215,10 @@ def add_spec(x: Float32[32,]) -> Float32[32,]:
 def add_kernel(x_ptr, z_ptr, N0, B0: tl.constexpr):
     # We name the offsets of the pointers as "off_"
     off_x = tl.arange(0, B0)
-    x = tl.load(x_ptr + off_x)
-    # Finish me!
-    return
+    x = tl.load(x_ptr + off_x,off_x < N0 ,0)
+    x = x + 10.0
+    tl.store(z_ptr + off_x, x, off_x < N0)
+    return 
 
 
 r"""
@@ -237,6 +239,12 @@ def add2_spec(x: Float32[200,]) -> Float32[200,]:
 @triton.jit
 def add_mask2_kernel(x_ptr, z_ptr, N0, B0: tl.constexpr):
     # Finish me!
+    m = tl.program_id(0)
+    off_x = m * B0 + tl.arange(0, B0)
+    mask = off_x < N0
+    x = tl.load(x_ptr + off_x, mask = mask)
+    x = x + 10.0
+    tl.store(z_ptr + off_x, x , mask = mask)
     return
 
 
@@ -260,6 +268,15 @@ def add_vec_spec(x: Float32[32,], y: Float32[32,]) -> Float32[32, 32]:
 @triton.jit
 def add_vec_kernel(x_ptr, y_ptr, z_ptr, N0, N1, B0: tl.constexpr, B1: tl.constexpr):
     # Finish me!
+    off_x = tl.arange(0, B0)
+    off_y = tl.arange(0, B1)
+    range = off_y[:, None] * B0 + off_y[None, :]
+    
+    x = tl.load(x_ptr + off_x)
+    y = tl.load(y_ptr + off_y)
+    z = x[None,:] + y[:,None]
+    
+    tl.store(z_ptr + range, z)
     return
 
 
